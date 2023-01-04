@@ -23,7 +23,7 @@ class MemberRepositoryV0 {
             con = getConnection()
             pstmt = con.prepareStatement(sql)
             pstmt.setString(1, member.memberId)
-            pstmt.setInt(2, member.money ?: 0)
+            pstmt.setInt(2, member.money)
             pstmt.executeUpdate()
             member
         } catch (e: SQLException) {
@@ -51,6 +51,70 @@ class MemberRepositoryV0 {
             con?.close()
         } catch (e: SQLException) {
             log.error("error", e)
+        }
+    }
+
+    @Throws(SQLException::class)
+    fun findById(memberId: String): Member {
+        val sql = """select * from member where member_id = ?"""
+        var con: Connection? = null
+        var pstmt: PreparedStatement? = null
+        var rs: ResultSet? = null
+        return try {
+            con = getConnection()
+            pstmt = con.prepareStatement(sql)
+            pstmt.setString(1, memberId)
+            rs = pstmt.executeQuery()
+
+            if (rs.next()) {
+                Member(rs.getString("member_id"), rs.getInt("money"))
+            } else {
+                throw NoSuchElementException("member not found memberId=$memberId")
+            }
+        } catch (e: SQLException) {
+            log.error("db error", e)
+            throw e
+        } finally {
+            close(con, pstmt, rs)
+        }
+    }
+
+    @Throws(SQLException::class)
+    fun update(memberId: String, money: Int) {
+        val sql = """update member set money=? where member_id=?"""
+        var con: Connection? = null
+        var pstmt: PreparedStatement? = null
+
+        try {
+            con = getConnection()
+            pstmt = con.prepareStatement(sql)
+            pstmt.setInt(1, money)
+            pstmt.setString(2, memberId)
+            val resultSize = pstmt.executeUpdate()
+            log.info("resultSize={}", resultSize)
+        } catch (e: SQLException) {
+            log.error("db error", e)
+            throw e
+        } finally {
+            close(con, pstmt, null)
+        }
+    }
+
+    @Throws(SQLException::class)
+    fun delete(memberId: String) {
+        val sql = "delete from member where member_id=?"
+        var con: Connection? = null
+        var pstmt: PreparedStatement? = null
+        try {
+            con = getConnection()
+            pstmt = con.prepareStatement(sql)
+            pstmt.setString(1, memberId)
+            pstmt.executeUpdate()
+        } catch (e: SQLException) {
+            log.error("db error", e)
+            throw e
+        } finally {
+            close(con, pstmt, null)
         }
     }
 
